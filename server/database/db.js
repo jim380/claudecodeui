@@ -7,12 +7,19 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const DB_PATH = path.join(__dirname, 'auth.db');
+const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, 'auth.db');
 const INIT_SQL_PATH = path.join(__dirname, 'init.sql');
+
+if (process.env.DATABASE_PATH) {
+  const dbDir = path.dirname(process.env.DATABASE_PATH);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+}
 
 // Create database connection
 const db = new Database(DB_PATH);
-console.log('Connected to SQLite database');
+console.log(`Connected to SQLite database at: ${DB_PATH}`);
 
 // Initialize database with schema
 const initializeDatabase = async () => {
