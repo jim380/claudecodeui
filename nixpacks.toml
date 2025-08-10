@@ -1,23 +1,18 @@
-[variables]
-NODE_ENV = "production"
-PORT = "3000"
-NPM_CONFIG_LOGLEVEL = "error"
+[providers]
+node = "20"
 
 [phases.setup]
 nixPkgs = [
-  "nodejs_20",
   "python3",
   "gcc",
   "gnumake",
   "pkg-config",
-  "sqlite",
-  "git"
+  "sqlite"
 ]
 
 [phases.install]
 cmds = [
-  "npm ci --prefer-offline --no-audit --unsafe-perm",
-  "npm install -g @anthropic-ai/claude-code@latest"
+  "npm ci --unsafe-perm"
 ]
 
 [phases.build]
@@ -27,3 +22,7 @@ cmds = [
 
 [start]
 cmd = "node server/index.js"
+
+[variables]
+NODE_ENV = "production"
+NPM_CONFIG_LOGLEVEL = "error"
