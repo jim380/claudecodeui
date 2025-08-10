@@ -232,7 +232,7 @@ function ToolsSettings({ isOpen, onClose }) {
       
       if (response.ok) {
         const data = await response.json();
-        return data.testResult;
+        return data.testResult || data;
       } else {
         const error = await response.json();
         throw new Error(error.error || 'Failed to test configuration');
@@ -275,7 +275,6 @@ function ToolsSettings({ isOpen, onClose }) {
 
   const loadSettings = async () => {
     try {
-      
       // Load from localStorage
       const savedSettings = localStorage.getItem('claude-tools-settings');
       
