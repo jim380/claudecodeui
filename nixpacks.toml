@@ -5,7 +5,8 @@ nixPkgs = [
   "gcc",
   "gnumake",
   "pkg-config",
-  "sqlite"
+  "sqlite",
+  "bash"
 ]
 
 [phases.install]
@@ -19,7 +20,7 @@ cmds = [
 ]
 
 [start]
-cmd = "./docker-entrypoint.sh"
+cmd = "bash ./docker-entrypoint.sh"
 
 [variables]
 NODE_ENV = "production"
