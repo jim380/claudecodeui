@@ -6,7 +6,13 @@ nixPkgs = [
   "gnumake",
   "pkg-config",
   "sqlite",
-  "bash"
+  "bash",
+  "busybox"
+]
+cmds = [
+  "mkdir -p /bin",
+  "ln -sf $(which bash) /bin/sh",
+  "ln -sf $(which bash) /bin/bash"
 ]
 
 [phases.install]
