@@ -268,7 +268,10 @@ async function spawnClaude(command, options = {}, ws) {
       PATH: `/usr/local/bin:${process.env.PATH || '/usr/bin:/bin'}`
     };
     
-    const claudeProcess = spawnFunction(claudeBinary, args, {
+    // Use native spawn for absolute paths to avoid cross-spawn issues
+    const spawnToUse = claudeBinary.startsWith('/') ? spawn : spawnFunction;
+    
+    const claudeProcess = spawnToUse(claudeBinary, args, {
       cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: envWithPath,
