@@ -263,17 +263,16 @@ async function spawnClaude(command, options = {}, ws) {
     console.log(`🔧 Using node binary: ${nodeBinary}`);
     console.log(`📜 Claude script: ${claudeScript}`);
     
-    // Ensure PATH includes /usr/local/bin
-    const envWithPath = {
-      ...process.env,
-      PATH: `/usr/local/bin:${process.env.PATH || '/usr/bin:/bin'}`
-    };
+    // Use the existing environment without modifying PATH
+    // Nixpacks sets up the PATH correctly with node in the right location
+    const envWithPath = process.env;
     
     // Debug: Let's see what's happening
     console.log(`🔍 About to spawn with:`);
     console.log(`  - Binary: ${nodeBinary}`);
     console.log(`  - Script: ${claudeScript}`);
     console.log(`  - Working dir exists: ${existsSync(workingDir)}`);
+    console.log(`  - Current PATH: ${process.env.PATH}`);
     
     // Spawn node directly with the Claude script as the first argument
     const claudeProcess = spawn(nodeBinary, [claudeScript, ...args], {
