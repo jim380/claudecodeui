@@ -235,10 +235,16 @@ async function spawnClaude(command, options = {}, ws) {
     console.log('🔍 Full command args:', JSON.stringify(args, null, 2));
     console.log('🔍 Final Claude command will be: claude ' + args.join(' '));
     
+    // Ensure /usr/local/bin is in PATH for claude binary
+    const envWithPath = {
+      ...process.env,
+      PATH: `/usr/local/bin:${process.env.PATH || ''}`
+    };
+    
     const claudeProcess = spawnFunction('claude', args, {
       cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env } // Inherit all environment variables
+      env: envWithPath
     });
     
     // Attach temp file info to process for cleanup later

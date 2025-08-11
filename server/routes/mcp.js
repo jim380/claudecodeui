@@ -158,7 +158,8 @@ router.post('/cli/add', async (req, res) => {
     
     
     const process = spawn('claude', cliArgs, {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, PATH: `/usr/local/bin:${process.env.PATH || ''}` }
     });
     
     let stdout = '';
@@ -200,7 +201,8 @@ router.delete('/cli/remove/:name', async (req, res) => {
     const { spawn } = await import('child_process');
     
     const process = spawn('claude', ['mcp', 'remove', '--scope', 'user', name], {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, PATH: `/usr/local/bin:${process.env.PATH || ''}` }
     });
     
     let stdout = '';
@@ -242,7 +244,8 @@ router.get('/cli/get/:name', async (req, res) => {
     const { spawn } = await import('child_process');
     
     const process = spawn('claude', ['mcp', 'get', name], {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, PATH: `/usr/local/bin:${process.env.PATH || ''}` }
     });
     
     let stdout = '';
@@ -372,7 +375,8 @@ async function executeClaudeCommand(args) {
   const { spawn } = (await import('child_process'));
   return new Promise((resolve, reject) => {
     const process = spawn('claude', args, {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, PATH: `/usr/local/bin:${process.env.PATH || ''}` }
     });
     
     let stdout = '';
