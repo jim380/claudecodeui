@@ -30,6 +30,10 @@ export PATH="/usr/local/bin:$PATH"
 
 which claude && echo "✅ claude found in PATH" || echo "❌ claude NOT in PATH"
 
+# Test spawn with PATH fix
+echo "🧪 Testing Claude spawn with PATH fix..."
+node test-claude-spawn.js
+
 # Start the application with PATH explicitly set
 echo "🎯 Starting Node.js server..."
 exec env PATH="/usr/local/bin:$PATH" node server/index.js

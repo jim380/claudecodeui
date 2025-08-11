@@ -235,16 +235,17 @@ async function spawnClaude(command, options = {}, ws) {
     console.log('🔍 Full command args:', JSON.stringify(args, null, 2));
     console.log('🔍 Final Claude command will be: claude ' + args.join(' '));
     
-    // Ensure /usr/local/bin is in PATH for claude binary
-    const envWithPath = {
-      ...process.env,
-      PATH: `/usr/local/bin:${process.env.PATH || ''}`
-    };
+    // Use full path to claude binary if it exists, otherwise try 'claude' in PATH
+    const claudeBinary = require('fs').existsSync('/usr/local/bin/claude') 
+      ? '/usr/local/bin/claude' 
+      : 'claude';
     
-    const claudeProcess = spawnFunction('claude', args, {
+    console.log(`🔧 Using claude binary: ${claudeBinary}`);
+    
+    const claudeProcess = spawnFunction(claudeBinary, args, {
       cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: envWithPath
+      env: { ...process.env }
     });
     
     // Attach temp file info to process for cleanup later
