@@ -2,15 +2,16 @@
 
 import { spawn } from 'child_process';
 
-console.log('Testing Claude spawn with explicit PATH...');
+console.log('Testing Claude spawn with direct node execution...');
 
-// Test with PATH fix
+// Test with direct node execution
 const envWithPath = {
   ...process.env,
   PATH: `/usr/local/bin:${process.env.PATH || ''}`
 };
 
-const claudeProcess = spawn('claude', ['--version'], {
+// Use node directly to execute the Claude script
+const claudeProcess = spawn('node', ['/opt/claude-code/cli.js', '--version'], {
   stdio: ['pipe', 'pipe', 'pipe'],
   env: envWithPath
 });

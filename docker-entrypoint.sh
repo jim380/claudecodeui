@@ -9,17 +9,12 @@ ls -la /opt/claude-code/ 2>&1 || echo "   Directory not found"
 echo "📂 Checking /root/.claude directory:"
 ls -la /root/.claude/ 2>&1 || echo "   Directory not found"
 
-# Check if Claude module is mounted and create symlink at runtime
+# Check if Claude module is mounted
 if [ -f "/opt/claude-code/cli.js" ]; then
-    echo "✅ Claude module mounted, creating wrapper..."
-    cat > /usr/local/bin/claude << 'EOF'
-#!/usr/bin/env sh
-exec node /opt/claude-code/cli.js "$@"
-EOF
-    chmod +x /usr/local/bin/claude
-    echo "✅ Claude CLI wrapper created at /usr/local/bin/claude"
+    echo "✅ Claude module mounted at /opt/claude-code/cli.js"
     
-    /usr/local/bin/claude --version 2>&1 || echo "   Version check failed (normal if not authenticated)"
+    # Test direct node execution
+    node /opt/claude-code/cli.js --version 2>&1 || echo "   Version check failed (normal if not authenticated)"
 else
     echo "❌ Claude module NOT mounted at /opt/claude-code"
     echo "   Expected: /opt/claude-code/cli.js"
@@ -28,7 +23,8 @@ fi
 
 export PATH="/usr/local/bin:$PATH"
 
-which claude && echo "✅ claude found in PATH" || echo "❌ claude NOT in PATH"
+# No longer checking for claude wrapper since we use node directly
+echo "📍 Using direct node execution for Claude CLI"
 
 # Test spawn with PATH fix
 echo "🧪 Testing Claude spawn with PATH fix..."

@@ -255,12 +255,13 @@ async function spawnClaude(command, options = {}, ws) {
       console.log('❌ /usr/local/bin/claude does not exist');
     }
     
-    // Use absolute path to bypass cross-spawn's PATH checking
-    const claudeBinary = existsSync('/usr/local/bin/claude') 
-      ? '/usr/local/bin/claude'
-      : 'claude';
+    // Use node directly to execute the Claude CLI script
+    // This avoids shell wrapper issues in minimal container environments
+    const nodeBinary = process.execPath || 'node';
+    const claudeScript = '/opt/claude-code/cli.js';
     
-    console.log(`🔧 Using claude binary: ${claudeBinary}`);
+    console.log(`🔧 Using node binary: ${nodeBinary}`);
+    console.log(`📜 Claude script: ${claudeScript}`);
     
     // Ensure PATH includes /usr/local/bin
     const envWithPath = {
@@ -270,12 +271,12 @@ async function spawnClaude(command, options = {}, ws) {
     
     // Debug: Let's see what's happening
     console.log(`🔍 About to spawn with:`);
-    console.log(`  - Binary: ${claudeBinary}`);
+    console.log(`  - Binary: ${nodeBinary}`);
+    console.log(`  - Script: ${claudeScript}`);
     console.log(`  - Working dir exists: ${existsSync(workingDir)}`);
-    console.log(`  - Using native spawn: ${claudeBinary.startsWith('/')}`);
     
-    // Spawn without shell since we have the direct binary path
-    const claudeProcess = spawn(claudeBinary, args, {
+    // Spawn node directly with the Claude script as the first argument
+    const claudeProcess = spawn(nodeBinary, [claudeScript, ...args], {
       cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: envWithPath,
