@@ -13,7 +13,7 @@ ls -la /root/.claude/ 2>&1 || echo "   Directory not found"
 if [ -f "/opt/claude-code/cli.js" ]; then
     echo "✅ Claude module mounted, creating wrapper..."
     cat > /usr/local/bin/claude << 'EOF'
-#!/bin/bash
+#!/bin/sh
 exec node /opt/claude-code/cli.js "$@"
 EOF
     chmod +x /usr/local/bin/claude

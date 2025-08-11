@@ -1,5 +1,10 @@
 import { spawn } from 'child_process';
 import crossSpawn from 'cross-spawn';
+
+// Ensure /usr/local/bin is in PATH for the entire process
+if (!process.env.PATH?.includes('/usr/local/bin')) {
+  process.env.PATH = `/usr/local/bin:${process.env.PATH || '/usr/bin:/bin'}`;
+}
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
