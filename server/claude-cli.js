@@ -52,7 +52,25 @@ async function spawnClaude(command, options = {}, ws) {
     }
     
     // Use cwd (actual project directory) instead of projectPath (Claude's metadata directory)
-    const workingDir = cwd || process.cwd();
+    // In container environments, the project path might not exist yet
+    let workingDir = cwd || process.cwd();
+    
+    // Import existsSync for checking directory existence
+    const { existsSync } = await import('fs');
+    
+    // Ensure the working directory exists before spawning
+    if (workingDir && !existsSync(workingDir)) {
+      console.log(`⚠️ Working directory doesn't exist: ${workingDir}`);
+      console.log(`📁 Creating directory: ${workingDir}`);
+      try {
+        await fs.mkdir(workingDir, { recursive: true });
+        console.log(`✅ Created working directory: ${workingDir}`);
+      } catch (err) {
+        console.log(`❌ Failed to create directory: ${err.message}`);
+        console.log(`🔄 Using current directory instead: ${process.cwd()}`);
+        workingDir = process.cwd();
+      }
+    }
     
     // Handle images by saving them to temporary files and passing paths to Claude
     const tempImagePaths = [];
@@ -253,7 +271,7 @@ async function spawnClaude(command, options = {}, ws) {
     console.log('🔍 Final Claude command will be: claude ' + args.join(' '));
     
     // Use full path to claude binary if it exists, otherwise try 'claude' in PATH
-    const { existsSync, statSync } = await import('fs');
+    const { statSync } = await import('fs');
     
     // Debug: Check if the file exists and is executable
     if (existsSync('/usr/local/bin/claude')) {
