@@ -255,9 +255,9 @@ async function spawnClaude(command, options = {}, ws) {
       console.log('❌ /usr/local/bin/claude does not exist');
     }
     
-    // Use node directly to execute the Claude CLI script
-    // This avoids shell wrapper issues in minimal container environments
-    const nodeBinary = process.execPath || 'node';
+    // Use node from PATH to execute the Claude CLI script
+    // process.execPath contains build-time Nix store paths that don't exist at runtime
+    const nodeBinary = 'node';
     const claudeScript = '/opt/claude-code/cli.js';
     
     console.log(`🔧 Using node binary: ${nodeBinary}`);
