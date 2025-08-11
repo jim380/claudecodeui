@@ -4,49 +4,117 @@ import path from 'path';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { spawn } from 'child_process';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+
+async function readMcpServersFromConfig(projectPath = null) {
+  try {
+    const claudeConfigPath = path.join(os.homedir(), '.claude.json');
+    const configContent = await fs.readFile(claudeConfigPath, 'utf8');
+    const config = JSON.parse(configContent);
+    
+    const servers = [];
+    
+    // Project-specific servers
+    if (projectPath && config.projects && config.projects[projectPath]) {
+      const projectServers = config.projects[projectPath].mcpServers || {};
+      for (const [name, serverConfig] of Object.entries(projectServers)) {
+        servers.push({
+          name,
+          type: serverConfig.type || 'stdio',
+          command: serverConfig.command || '',
+          args: serverConfig.args || [],
+          env: serverConfig.env || {},
+          url: serverConfig.url || '',
+          disabled: serverConfig.disabled || false,
+          autoApprove: serverConfig.autoApprove || [],
+          scope: 'project',
+          projectPath
+        });
+      }
+    }
+    
+    // Global servers
+    if (config.mcpServers) {
+      for (const [name, serverConfig] of Object.entries(config.mcpServers)) {
+        if (!servers.find(s => s.name === name)) {
+          servers.push({
+            name,
+            type: serverConfig.type || 'stdio',
+            command: serverConfig.command || '',
+            args: serverConfig.args || [],
+            env: serverConfig.env || {},
+            url: serverConfig.url || '',
+            disabled: serverConfig.disabled || false,
+            autoApprove: serverConfig.autoApprove || [],
+            scope: 'global'
+          });
+        }
+      }
+    }
+    
+    return servers;
+  } catch (error) {
+    console.error('Error reading MCP servers from config:', error);
+    return [];
+  }
+}
+
+// GET /api/mcp/config/list - List MCP servers from ~/.claude.json
+router.get('/config/list', async (req, res) => {
+  try {
+    const { projectPath } = req.query;
+    console.log('📋 Reading MCP servers from ~/.claude.json');
+    
+    const servers = await readMcpServersFromConfig(projectPath);
+    
+    res.json({ 
+      success: true, 
+      servers,
+      source: 'config'
+    });
+  } catch (error) {
+    console.error('Error reading MCP servers from config:', error);
+    res.status(500).json({ 
+      error: 'Failed to read MCP servers from config', 
+      details: error.message 
+    });
+  }
+});
 
 // Claude CLI command routes
 
 // GET /api/mcp/cli/list - List MCP servers using Claude CLI
 router.get('/cli/list', async (req, res) => {
   try {
-    const { spawn } = await import('child_process');
-    const { promisify } = await import('util');
-    const exec = promisify(spawn);
+    console.log('📋 Listing MCP servers using Claude CLI');
     
-    const process = spawn('claude', ['mcp', 'list'], {
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
+    const listResult = await executeClaudeCommand(['mcp', 'list']);
+    const servers = parseClaudeListOutput(listResult.output);
+    console.log('🔍 Parsed Claude CLI servers:', servers);
     
-    let stdout = '';
-    let stderr = '';
+    const detailedServers = await Promise.all(
+      servers.map(async (server) => {
+        try {
+          const getResult = await executeClaudeCommand(['mcp', 'get', server.name]);
+          const details = parseClaudeGetOutput(getResult.output);
+          return {
+            ...server,
+            command: details.command || '',
+            args: details.args || [],
+            env: details.env || {},
+            url: details.url || '',
+            headers: details.headers || {}
+          };
+        } catch (error) {
+          console.error(`❌ Failed to get details for server ${server.name}:`, error.message);
+          return server; 
+        }
+      })
+    );
     
-    process.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-    
-    process.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-    
-    process.on('close', (code) => {
-      if (code === 0) {
-        res.json({ success: true, output: stdout, servers: parseClaudeListOutput(stdout) });
-      } else {
-        console.error('Claude CLI error:', stderr);
-        res.status(500).json({ error: 'Claude CLI command failed', details: stderr });
-      }
-    });
-    
-    process.on('error', (error) => {
-      console.error('Error running Claude CLI:', error);
-      res.status(500).json({ error: 'Failed to run Claude CLI', details: error.message });
-    });
+    res.json({ success: true, output: listResult.output, servers: detailedServers });
   } catch (error) {
     console.error('Error listing MCP servers via CLI:', error);
     res.status(500).json({ error: 'Failed to list MCP servers', details: error.message });
@@ -245,38 +313,63 @@ function parseClaudeListOutput(output) {
 }
 
 function parseClaudeGetOutput(output) {
-  // Parse the output from 'claude mcp get <name>' command
-  // This is a simple parser - might need adjustment based on actual output format
+  
   try {
-    // Try to extract JSON if present
-    const jsonMatch = output.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    
-    // Otherwise, parse as text
     const server = { raw_output: output };
     const lines = output.split('\n');
     
-    for (const line of lines) {
-      if (line.includes('Name:')) {
-        server.name = line.split(':')[1]?.trim();
-      } else if (line.includes('Type:')) {
-        server.type = line.split(':')[1]?.trim();
-      } else if (line.includes('Command:')) {
-        server.command = line.split(':')[1]?.trim();
-      } else if (line.includes('URL:')) {
-        server.url = line.split(':')[1]?.trim();
+    let inEnvironmentSection = false;
+    const env = {};
+    const args = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      if (i === 0 && line.endsWith(':')) {
+        server.name = line.slice(0, -1).trim();
       }
+      else if (line.startsWith('  ')) {
+        const trimmedLine = line.trim();
+        
+        if (trimmedLine.startsWith('Type:')) {
+          server.type = trimmedLine.split(':')[1]?.trim();
+        } else if (trimmedLine.startsWith('Command:')) {
+          server.command = trimmedLine.split(':').slice(1).join(':').trim();
+        } else if (trimmedLine.startsWith('Args:')) {
+          const argsValue = trimmedLine.split(':').slice(1).join(':').trim();
+          if (argsValue) {
+            args.push(argsValue);
+          }
+        } else if (trimmedLine.startsWith('URL:')) {
+          server.url = trimmedLine.split(':').slice(1).join(':').trim();
+        } else if (trimmedLine === 'Environment:') {
+          inEnvironmentSection = true;
+        } else if (inEnvironmentSection && trimmedLine.includes(':')) {
+          const [key, ...valueParts] = trimmedLine.split(':');
+          env[key.trim()] = valueParts.join(':').trim();
+        }
+      }
+      else if (line.startsWith('    ') && !line.trim().includes(':')) {
+        args.push(line.trim());
+      }
+    }
+    
+    if (args.length > 0) {
+      server.args = args;
+    }
+    if (Object.keys(env).length > 0) {
+      server.env = env;
     }
     
     return server;
   } catch (error) {
+    console.error('Error parsing Claude get output:', error);
     return { raw_output: output, parse_error: error.message };
   }
 }
 
-function executeClaudeCommand(args) {
+async function executeClaudeCommand(args) {
+  const { spawn } = (await import('child_process'));
   return new Promise((resolve, reject) => {
     const process = spawn('claude', args, {
       stdio: ['pipe', 'pipe', 'pipe']
@@ -418,9 +511,29 @@ router.get('/servers', async (req, res) => {
     const result = await executeClaudeCommand(['mcp', 'list']);
     const servers = parseClaudeListOutput(result.output);
     
+    const detailedServers = await Promise.all(
+      servers.map(async (server) => {
+        try {
+          const getResult = await executeClaudeCommand(['mcp', 'get', server.name]);
+          const details = parseClaudeGetOutput(getResult.output);
+          return {
+            ...server,
+            command: details.command || '',
+            args: details.args || [],
+            env: details.env || {},
+            url: details.url || '',
+            headers: details.headers || {}
+          };
+        } catch (error) {
+          console.error(`Failed to get details for server ${server.name}:`, error);
+          return server;
+        }
+      })
+    );
+    
     res.json({
       success: true,
-      servers,
+      servers: detailedServers,
       scope,
       message: 'MCP servers listed successfully'
     });
@@ -440,6 +553,7 @@ router.post('/servers/:serverId/test', async (req, res) => {
     const { serverId } = req.params;
     const { scope = 'user' } = req.query;
     
+    console.log(`🧪 Testing existing MCP server: ${serverId} with scope: ${scope}`);
     
     if (!serverId) {
       return res.status(400).json({ error: 'Server ID is required' });
@@ -447,7 +561,7 @@ router.post('/servers/:serverId/test', async (req, res) => {
     
     let serverDetails;
     try {
-      const getResult = await executeClaudeCommand(['mcp', 'get', '-s', scope, serverId]);
+      const getResult = await executeClaudeCommand(['mcp', 'get', serverId]);
       serverDetails = parseClaudeGetOutput(getResult.output);
     } catch (error) {
       return res.status(404).json({
@@ -461,7 +575,7 @@ router.post('/servers/:serverId/test', async (req, res) => {
     res.json({
       success: true,
       serverId,
-      message: `MCP server "${serverId}" is configured and accessible`,
+      message: `Connected`,
       server: serverDetails,
       scope,
       note: 'Server validated by retrieving configuration details'
@@ -490,7 +604,7 @@ router.post('/servers/:serverId/tools', async (req, res) => {
     
     let serverDetails;
     try {
-      const getResult = await executeClaudeCommand(['mcp', 'get', '-s', scope, serverId]);
+      const getResult = await executeClaudeCommand(['mcp', 'get', serverId]);
       serverDetails = parseClaudeGetOutput(getResult.output);
     } catch (error) {
       return res.status(404).json({
