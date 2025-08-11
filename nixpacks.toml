@@ -8,19 +8,15 @@ nixPkgs = [
   "sqlite",
   "bash",
   "busybox",
-  "coreutils"
+  "coreutils",
+  "shadow"
 ]
 cmds = [
   "mkdir -p /bin",
   "ln -sf $(which bash) /bin/sh",
   "ln -sf $(which bash) /bin/bash",
-  "useradd -m -s /bin/bash -u 1000 appuser || true",
-  "mkdir -p /home/appuser/.claude",
-  "cp -r /root/.claude/* /home/appuser/.claude/ 2>/dev/null || true",
-  "chown -R appuser:appuser /home/appuser",
-  "chown -R appuser:appuser /app || true",
-  "chown -R appuser:appuser /opt/claude-code || true",
-  "chmod -R 755 /opt/claude-code || true"
+  "useradd -m -u 1001 -s /bin/bash appuser",
+  "chown -R appuser:appuser /app"
 ]
 
 [phases.install]
@@ -34,7 +30,7 @@ cmds = [
 ]
 
 [start]
-cmd = "bash ./docker-entrypoint.sh"
+cmd = "su -s /bin/bash appuser -c 'bash ./docker-entrypoint.sh'"
 
 [variables]
 NODE_ENV = "production"

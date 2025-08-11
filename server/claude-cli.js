@@ -217,10 +217,15 @@ async function spawnClaude(command, options = {}, ws) {
     }
     
     // Add tools settings flags
-    // Don't use --dangerously-skip-permissions when in plan mode
-    if (settings.skipPermissions && permissionMode !== 'plan') {
+    // Don't use --dangerously-skip-permissions when in plan mode or when running as root
+    const isRoot = process.getuid && process.getuid() === 0;
+    
+    if (settings.skipPermissions && permissionMode !== 'plan' && !isRoot) {
       args.push('--dangerously-skip-permissions');
       console.log('⚠️  Using --dangerously-skip-permissions (skipping other tool settings)');
+    } else if (settings.skipPermissions && isRoot) {
+      console.log('⚠️  Skipping --dangerously-skip-permissions (running as root)');
+      // Still skip adding other tool settings since user wants to skip permissions
     } else {
       // Only add allowed/disallowed tools if not skipping permissions
       

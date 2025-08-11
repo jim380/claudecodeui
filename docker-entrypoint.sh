@@ -4,29 +4,6 @@ echo "🚀 Starting Docker entrypoint..."
 echo "📍 Current PATH: $PATH"
 echo "👤 Current user: $(whoami) (UID: $(id -u))"
 
-if [ "$(id -u)" = "0" ]; then
-    echo "🔄 Running as root, switching to appuser..."
-    
-    if ! id -u appuser >/dev/null 2>&1; then
-        echo "📝 Creating appuser..."
-        useradd -m -s /bin/bash -u 1000 appuser
-    fi
-    
-    if [ -d "/root/.claude" ] && [ ! -d "/home/appuser/.claude" ]; then
-        echo "📋 Copying Claude config to appuser..."
-        cp -r /root/.claude /home/appuser/.claude
-        chown -R appuser:appuser /home/appuser/.claude
-    fi
-    
-    chown -R appuser:appuser /app 2>/dev/null || true
-    chown -R appuser:appuser /opt/claude-code 2>/dev/null || true
-    chown -R appuser:appuser /home/appuser 2>/dev/null || true
-    
-    exec su - appuser -c "cd /app && bash $0"
-fi
-
-echo "✅ Running as user: $(whoami)"
-
 echo "📂 Checking /opt/claude-code directory:"
 ls -la /opt/claude-code/ 2>&1 || echo "   Directory not found"
 
