@@ -9,12 +9,25 @@ ls -la /opt/claude-code/ 2>&1 || echo "   Directory not found"
 echo "📂 Checking /root/.claude directory:"
 ls -la /root/.claude/ 2>&1 || echo "   Directory not found"
 
+# Debug: Find where node actually is
+echo "🔍 Looking for node binary:"
+which node 2>&1 || echo "   'which node' failed"
+echo "📍 Node locations:"
+find /root/.nix-profile /nix/var/nix/profiles /usr/local/bin /usr/bin -name node 2>/dev/null | head -5
+
 # Check if Claude module is mounted
 if [ -f "/opt/claude-code/cli.js" ]; then
     echo "✅ Claude module mounted at /opt/claude-code/cli.js"
     
-    # Test direct node execution
-    node /opt/claude-code/cli.js --version 2>&1 || echo "   Version check failed (normal if not authenticated)"
+    # Find the actual node path
+    NODE_PATH=$(which node 2>/dev/null || echo "")
+    if [ -n "$NODE_PATH" ]; then
+        echo "📍 Found node at: $NODE_PATH"
+        # Test direct node execution
+        $NODE_PATH /opt/claude-code/cli.js --version 2>&1 || echo "   Version check failed (normal if not authenticated)"
+    else
+        echo "❌ Could not find node in PATH"
+    fi
 else
     echo "❌ Claude module NOT mounted at /opt/claude-code"
     echo "   Expected: /opt/claude-code/cli.js"

@@ -1,5 +1,17 @@
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import crossSpawn from 'cross-spawn';
+
+// Find the actual node binary location at startup
+let NODE_BINARY_PATH = 'node';
+try {
+  // Try to find node using which command
+  NODE_BINARY_PATH = execSync('which node', { encoding: 'utf8' }).trim();
+  console.log(`✅ Found node binary at: ${NODE_BINARY_PATH}`);
+} catch (e) {
+  // Fallback to process.execPath if which fails
+  NODE_BINARY_PATH = process.execPath;
+  console.log(`⚠️ Using process.execPath as fallback: ${NODE_BINARY_PATH}`);
+}
 
 // Ensure /usr/local/bin is in PATH for the entire process
 if (!process.env.PATH?.includes('/usr/local/bin')) {
@@ -255,9 +267,8 @@ async function spawnClaude(command, options = {}, ws) {
       console.log('❌ /usr/local/bin/claude does not exist');
     }
     
-    // Use node from PATH to execute the Claude CLI script
-    // process.execPath contains build-time Nix store paths that don't exist at runtime
-    const nodeBinary = 'node';
+    // Use the node binary we found at startup
+    const nodeBinary = NODE_BINARY_PATH;
     const claudeScript = '/opt/claude-code/cli.js';
     
     console.log(`🔧 Using node binary: ${nodeBinary}`);
