@@ -10,9 +10,7 @@ nixPkgs = [
 
 [phases.install]
 cmds = [
-  "npm ci --unsafe-perm",
-  "ln -sf /opt/claude-code/cli.js /usr/local/bin/claude",
-  "chmod +x /usr/local/bin/claude"
+  "npm ci --unsafe-perm"
 ]
 
 [phases.build]
@@ -21,7 +19,7 @@ cmds = [
 ]
 
 [start]
-cmd = "node server/index.js"
+cmd = "./docker-entrypoint.sh"
 
 [variables]
 NODE_ENV = "production"
