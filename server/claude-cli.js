@@ -236,17 +236,36 @@ async function spawnClaude(command, options = {}, ws) {
     console.log('🔍 Final Claude command will be: claude ' + args.join(' '));
     
     // Use full path to claude binary if it exists, otherwise try 'claude' in PATH
-    const { existsSync } = await import('fs');
-    const claudeBinary = existsSync('/usr/local/bin/claude') 
-      ? '/usr/local/bin/claude' 
-      : 'claude';
+    const { existsSync, statSync } = await import('fs');
+    
+    // Debug: Check if the file exists and is executable
+    if (existsSync('/usr/local/bin/claude')) {
+      try {
+        const stats = statSync('/usr/local/bin/claude');
+        console.log(`📁 /usr/local/bin/claude exists - isFile: ${stats.isFile()}, mode: ${(stats.mode & parseInt('777', 8)).toString(8)}`);
+      } catch (e) {
+        console.log(`❌ Error checking /usr/local/bin/claude: ${e.message}`);
+      }
+    } else {
+      console.log('❌ /usr/local/bin/claude does not exist');
+    }
+    
+    // For now, always use 'claude' which should be in PATH
+    const claudeBinary = 'claude';
     
     console.log(`🔧 Using claude binary: ${claudeBinary}`);
+    
+    // Ensure PATH includes /usr/local/bin
+    const envWithPath = {
+      ...process.env,
+      PATH: `/usr/local/bin:${process.env.PATH || '/usr/bin:/bin'}`
+    };
     
     const claudeProcess = spawnFunction(claudeBinary, args, {
       cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env }
+      env: envWithPath,
+      shell: false  // Don't use shell to avoid issues
     });
     
     // Attach temp file info to process for cleanup later
