@@ -274,12 +274,12 @@ async function spawnClaude(command, options = {}, ws) {
     console.log(`  - Working dir exists: ${existsSync(workingDir)}`);
     console.log(`  - Using native spawn: ${claudeBinary.startsWith('/')}`);
     
-    // Try with shell: true to execute the shell script
+    // Spawn without shell since we have the direct binary path
     const claudeProcess = spawn(claudeBinary, args, {
       cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: envWithPath,
-      shell: true  // Use shell to execute the script
+      shell: false  // Direct execution without shell
     });
     
     // Attach temp file info to process for cleanup later
