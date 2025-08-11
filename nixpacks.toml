@@ -10,7 +10,9 @@ nixPkgs = [
 
 [phases.install]
 cmds = [
-  "npm ci --unsafe-perm"
+  "npm ci --unsafe-perm",
+  "ln -sf /opt/claude-code/cli.js /usr/local/bin/claude",
+  "chmod +x /usr/local/bin/claude"
 ]
 
 [phases.build]
@@ -24,3 +26,4 @@ cmd = "node server/index.js"
 [variables]
 NODE_ENV = "production"
 NPM_CONFIG_LOGLEVEL = "error"
+PATH = "/usr/local/bin:/usr/bin:/bin"
