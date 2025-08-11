@@ -236,7 +236,8 @@ async function spawnClaude(command, options = {}, ws) {
     console.log('🔍 Final Claude command will be: claude ' + args.join(' '));
     
     // Use full path to claude binary if it exists, otherwise try 'claude' in PATH
-    const claudeBinary = require('fs').existsSync('/usr/local/bin/claude') 
+    const { existsSync } = await import('fs');
+    const claudeBinary = existsSync('/usr/local/bin/claude') 
       ? '/usr/local/bin/claude' 
       : 'claude';
     
