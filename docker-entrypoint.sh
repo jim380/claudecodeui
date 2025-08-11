@@ -30,6 +30,6 @@ export PATH="/usr/local/bin:$PATH"
 
 which claude && echo "✅ claude found in PATH" || echo "❌ claude NOT in PATH"
 
-# Start the application
+# Start the application with PATH explicitly set
 echo "🎯 Starting Node.js server..."
-exec node server/index.js
+exec env PATH="/usr/local/bin:$PATH" node server/index.js
