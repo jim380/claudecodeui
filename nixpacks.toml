@@ -33,3 +33,6 @@ cmd = "bash ./docker-entrypoint.sh"
 NODE_ENV = "production"
 NPM_CONFIG_LOGLEVEL = "error"
 PATH = "/usr/local/bin:/usr/bin:/bin"
+# Path translation for volume mounts - update these based on your Dokploy volume configuration
+HOST_PATH_PREFIX = "/home/ubuntu/Documents"
+CONTAINER_PATH_PREFIX = "/root/Documents"

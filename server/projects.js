@@ -146,6 +146,17 @@ async function extractProjectDirectory(projectName) {
       }
     }
     
+    // Handle volume mount path translation for containerized environments
+    if (process.env.HOST_PATH_PREFIX && process.env.CONTAINER_PATH_PREFIX) {
+      const hostPrefix = process.env.HOST_PATH_PREFIX;
+      const containerPrefix = process.env.CONTAINER_PATH_PREFIX;
+      if (extractedPath.startsWith(hostPrefix)) {
+        const translatedPath = extractedPath.replace(hostPrefix, containerPrefix);
+        console.log(`Path translation: ${extractedPath} -> ${translatedPath}`);
+        extractedPath = translatedPath;
+      }
+    }
+    
     // Cache the result
     projectDirectoryCache.set(projectName, extractedPath);
     
@@ -155,6 +166,17 @@ async function extractProjectDirectory(projectName) {
     console.error(`Error extracting project directory for ${projectName}:`, error);
     // Fall back to decoded project name
     extractedPath = projectName.replace(/-/g, '/');
+    
+    // Handle volume mount path translation for fallback path too
+    if (process.env.HOST_PATH_PREFIX && process.env.CONTAINER_PATH_PREFIX) {
+      const hostPrefix = process.env.HOST_PATH_PREFIX;
+      const containerPrefix = process.env.CONTAINER_PATH_PREFIX;
+      if (extractedPath.startsWith(hostPrefix)) {
+        const translatedPath = extractedPath.replace(hostPrefix, containerPrefix);
+        console.log(`Path translation (fallback): ${extractedPath} -> ${translatedPath}`);
+        extractedPath = translatedPath;
+      }
+    }
     
     // Cache the fallback result too
     projectDirectoryCache.set(projectName, extractedPath);
