@@ -268,14 +268,18 @@ async function spawnClaude(command, options = {}, ws) {
       PATH: `/usr/local/bin:${process.env.PATH || '/usr/bin:/bin'}`
     };
     
-    // Use native spawn for absolute paths to avoid cross-spawn issues
-    const spawnToUse = claudeBinary.startsWith('/') ? spawn : spawnFunction;
+    // Debug: Let's see what's happening
+    console.log(`🔍 About to spawn with:`);
+    console.log(`  - Binary: ${claudeBinary}`);
+    console.log(`  - Working dir exists: ${existsSync(workingDir)}`);
+    console.log(`  - Using native spawn: ${claudeBinary.startsWith('/')}`);
     
-    const claudeProcess = spawnToUse(claudeBinary, args, {
+    // Try with shell: true to execute the shell script
+    const claudeProcess = spawn(claudeBinary, args, {
       cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: envWithPath,
-      shell: false  // Don't use shell to avoid issues
+      shell: true  // Use shell to execute the script
     });
     
     // Attach temp file info to process for cleanup later
