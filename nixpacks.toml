@@ -8,15 +8,12 @@ nixPkgs = [
   "sqlite",
   "bash",
   "busybox",
-  "coreutils",
-  "shadow"
+  "coreutils"
 ]
 cmds = [
   "mkdir -p /bin",
   "ln -sf $(which bash) /bin/sh",
-  "ln -sf $(which bash) /bin/bash",
-  "useradd -m -u 1001 -s /bin/bash appuser",
-  "chown -R appuser:appuser /app"
+  "ln -sf $(which bash) /bin/bash"
 ]
 
 [phases.install]
@@ -30,7 +27,7 @@ cmds = [
 ]
 
 [start]
-cmd = "su -s /bin/bash appuser -c 'bash ./docker-entrypoint.sh'"
+cmd = "bash ./docker-entrypoint.sh"
 
 [variables]
 NODE_ENV = "production"
