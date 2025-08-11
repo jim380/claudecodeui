@@ -255,8 +255,10 @@ async function spawnClaude(command, options = {}, ws) {
       console.log('❌ /usr/local/bin/claude does not exist');
     }
     
-    // For now, always use 'claude' which should be in PATH
-    const claudeBinary = 'claude';
+    // Use absolute path to bypass cross-spawn's PATH checking
+    const claudeBinary = existsSync('/usr/local/bin/claude') 
+      ? '/usr/local/bin/claude'
+      : 'claude';
     
     console.log(`🔧 Using claude binary: ${claudeBinary}`);
     
